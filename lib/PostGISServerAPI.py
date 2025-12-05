@@ -561,3 +561,34 @@ class PostGISServerConnection():
                 return str_error
         return str_error
 
+    def remove_user_from_project(self, project_id, user_id):
+        str_error = ''
+        data = None
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        url_get = self.url + defs_server_api.URL_PROJECTS_USERS_SUFFIX + '/' + str(project_id)
+        url_get += ('/' + str(user_id))
+        payload = {}
+        headers_as_dict = {}
+        # headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        headers = headers_as_dict
+        response = requests.request("DELETE", url_get, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        return str_error
