@@ -25,6 +25,7 @@ URL_PROJECTS_SUFFIX = '/api/projects'
 URL_DB_SQL = '/api/db/sql'
 URL_PROJECTS_USERS_SUFFIX = '/api/projects/users'
 URL_LAYERS_GROUPS = '/api/layers/groups'
+URL_LAYERS = '/api/layers'
 
 LOGIN_TAG_EMAIL = 'email'
 LOGIN_TAG_PASSWORD = 'password'
@@ -77,3 +78,6 @@ DB_TAG_PROJECT_ID = "project_id"
 
 LAYERS_GROUPS_TAG_NAME = 'name'
 LAYERS_GROUPS_TAG_ID = 'group_id'
+
+LAYER_TAG_TABLE_NAME = 'table_name'
+LAYER_TAG_ID = 'layer_id'

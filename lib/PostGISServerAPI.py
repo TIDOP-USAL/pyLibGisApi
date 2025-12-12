@@ -28,7 +28,7 @@ class PostGISServerConnection():
         self.user = None
         self.password = None
         self.layers_group_id_by_name = None # dict
-        self.layers_groups_id_by_email = None # dict
+        self.layer_id_by_table_name = None # dict
 
     def add_user_to_project(self, project_id, user_id, role):
         str_error = ''
@@ -60,6 +60,49 @@ class PostGISServerConnection():
                 str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
                 return str_error
             str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        return str_error
+
+    def create_layer(self, project_id, layer_as_dict):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error
+        if not isinstance(layer_as_dict, dict):
+            str_error = 'layer_as_dict must be a dictionary'
+            return str_error
+        url_post = self.url + defs_server_api.URL_LAYERS + '/' + str(project_id)
+        payload = json.dumps(layer_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        str_error = self.get_layers(project_id)
+        if str_error:
+            str_error = ('Creating layer, error:\n{}'.format(str_error))
             return str_error
         return str_error
 
@@ -105,7 +148,6 @@ class PostGISServerConnection():
             str_error = ('Creating layers group, error:\n{}'.format(str_error))
             return str_error
         return str_error
-
 
     def create_project(self, name, description, start_date, end_date, type):
         str_error = ''
@@ -367,6 +409,54 @@ class PostGISServerConnection():
                 return str_error, exists_project
         return str_error, exists_project
 
+    def get_layers(self, project_id):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error
+        url_get = self.url + defs_server_api.URL_LAYERS + '/' + str(project_id)
+        payload = {}
+        headers_as_dict = {}
+        # headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("GET", url_get, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        data = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        if self.layer_id_by_table_name is not None:
+            del self.layer_id_by_table_name
+            self.layer_id_by_table_name = None
+        self.layer_id_by_table_name = {}
+        for layer in data:
+            name = layers_group[defs_server_api.LAYER_TAG_TABLE_NAME]
+            id = layers_group[defs_server_api.LAYER_TAG_ID]
+            self.layer_id_by_table_name[name] = id
+        return str_error
+
     def get_layers_groups(self, project_id):
         str_error = ''
         if self.url is None:
@@ -408,15 +498,26 @@ class PostGISServerConnection():
         if self.layers_group_id_by_name is not None:
             del self.layers_group_id_by_name
             self.layers_group_id_by_name = None
-        if bool(self.layers_group_id_by_name):
-            del self.layers_group_id_by_name
-            self.layers_group_id_by_name = None
         self.layers_group_id_by_name = {}
         for layers_group in data:
             name = layers_group[defs_server_api.LAYERS_GROUPS_TAG_NAME]
             id = layers_group[defs_server_api.LAYERS_GROUPS_TAG_ID]
             self.layers_group_id_by_name[name] = id
         return str_error
+
+    def get_layer_id_by_table_name(self, project_id, table_name):
+        str_error = ''
+        id = None
+        if self.layer_id_by_table_name is None:
+            str_error = self.get_layers(project_id)
+            if str_error:
+                return str_error, id
+        # if not table_name in self.layer_id_by_table_name:
+        #     str_error = ('Not exists layer: {}'.format(table_name))
+        #     return str_error, id
+        if table_name in self.layer_id_by_table_name:
+            id = self.layer_id_by_table_name[table_name]
+        return str_error, id
 
     def get_layers_group_id_by_name(self, project_id, layers_group_name):
         str_error = ''
@@ -425,10 +526,11 @@ class PostGISServerConnection():
             str_error = self.get_layers_groups(project_id)
             if str_error:
                 return str_error, id
-        if not layers_group_name in self.layers_group_id_by_name:
-            str_error = ('Not exists layers group: {}'.format(layers_group_name))
-            return str_error, id
-        id = self.layers_group_id_by_name[layers_group_name]
+        # if not layers_group_name in self.layers_group_id_by_name:
+        #     str_error = ('Not exists layers group: {}'.format(layers_group_name))
+        #     return str_error, id
+        if layers_group_name in self.layers_group_id_by_name:
+            id = self.layers_group_id_by_name[layers_group_name]
         return str_error, id
 
     def get_project_by_name(self, project_name):
