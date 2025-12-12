@@ -451,10 +451,15 @@ class PostGISServerConnection():
             del self.layer_id_by_table_name
             self.layer_id_by_table_name = None
         self.layer_id_by_table_name = {}
-        for layer in data:
-            name = layers_group[defs_server_api.LAYER_TAG_TABLE_NAME]
-            id = layers_group[defs_server_api.LAYER_TAG_ID]
-            self.layer_id_by_table_name[name] = id
+        for layers_group in data:
+            layers_group_db_id = layers_group[defs_server_api.LAYER_LAYERS_GROUPS_TAG_ID]
+            layers_group_name = layers_group[defs_server_api.LAYER_LAYERS_GROUPS_TAG_NAME]
+            layers = layers_group[defs_server_api.LAYER_LAYERS_GROUPS_TAG_LAYERS]
+            for i in range(len(layers)):
+                layer = layers[i]
+                layer_name = layer[defs_server_api.LAYER_TAG_TABLE_NAME]
+                layer_db_id = layer[defs_server_api.LAYER_TAG_ID]
+                self.layer_id_by_table_name[layer_name] = layer_db_id
         return str_error
 
     def get_layers_groups(self, project_id):
