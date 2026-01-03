@@ -17,6 +17,7 @@ HEADERS_TAG_AUTHORIZATION = 'Authorization'
 HEADERS_TAG_AUTHORIZATION_BEARER = 'Bearer '# one space after
 HEADERS_TAG_ACCEPT = 'Accept'
 HEADERS_ACCEPT_DEFAULT_VALUE = 'application/json'
+HEADERS_CONTENT_UPLOAD_FILE_VALUE = 'multipart/form-data'
 
 URL_LOGIN_SUFFIX = '/api/auth/login'
 URL_USERS_SUFFIX = '/api/users'
@@ -28,6 +29,9 @@ URL_LAYERS_GROUPS = '/api/layers/groups'
 URL_LAYERS = '/api/layers'
 URL_FILE_MANAGER_SCAN_SUFFIX = '/api/filemanager/scan'
 URL_FILE_MANAGER_FOLDER_SUFFIX = '/api/filemanager/folder'
+URL_FILE_MANAGER_UPLOADS = '/api/filemanager/uploads'
+URL_FILE_MANAGER_DELETE = '/api/filemanager/delete'
+URL_FILE_MANAGER_MOVE = '/api/filemanager/move'
 
 LOGIN_TAG_EMAIL = 'email'
 LOGIN_TAG_PASSWORD = 'password'
@@ -91,7 +95,11 @@ LAYER_LAYERS_GROUPS_TAG_LAYERS = 'layers'
 PATH_TAG = 'path'
 ROOT_PATH = '/'
 FOLDER_TAG = 'folder'
+UPLOADS_FOLDER = 'uploads'
 
 FILE_MANAGER_TAG_ACTION = 'action'
 FILE_MANAGER_TAG_ACTION_CREATE = 'create'
+FILE_MANAGER_TAG_SOURCE_PATH = 'source_path'
+FILE_MANAGER_TAG_TARGET_PATH = 'target_path'
+
 
