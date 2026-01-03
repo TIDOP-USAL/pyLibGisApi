@@ -6,11 +6,14 @@ import requests
 import json
 from urllib.parse import urlparse
 import re
+from datetime import datetime
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(current_path, '..'))
 
+from pyLibProcesses.defs import defs_processes as processes_defs_processes
 from pyLibGisApi.defs import defs_server_api
+from pyLibGisApi.defs import defs_processes
 
 def email_validator(email):
     pattern = (r"^(?!\.)(?!.*\.\.)[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+"
@@ -29,6 +32,7 @@ class PostGISServerAPI():
         self.password = None
         self.layers_group_id_by_name = None # dict
         self.layer_id_by_table_name = None # dict
+        self.current_project_id = None
 
     def add_user_to_project(self, project_id, user_id, role):
         str_error = ''
@@ -55,6 +59,59 @@ class PostGISServerAPI():
             str_error = 'post request failed: not found'
             return str_error
         response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        return str_error
+
+    def create_folder(self, project_id, path, folder):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error
+        if not isinstance(path, str):
+            str_error = 'path must be a string'
+            return str_error
+        if not isinstance(folder, str):
+            str_error = 'folder must be a string'
+            return str_error
+        url_post = self.url + defs_server_api.URL_FILE_MANAGER_FOLDER_SUFFIX
+        payload_as_dict = {}
+        payload_as_dict[defs_server_api.PROJECT_TAG_ID_WITH_PROJECT] = str(self.current_project_id)
+        payload_as_dict[defs_server_api.FILE_MANAGER_TAG_ACTION] = defs_server_api.FILE_MANAGER_TAG_ACTION_CREATE
+        payload_as_dict[defs_server_api.PATH_TAG] = path
+        payload_as_dict[defs_server_api.FOLDER_TAG] = folder
+        payload = json.dumps(payload_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
         if not response.ok:
             if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
                 str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
@@ -538,6 +595,59 @@ class PostGISServerAPI():
             id = self.layers_group_id_by_name[layers_group_name]
         return str_error, id
 
+    def get_folder_structure(self, project_id, folder):
+        str_error = ''
+        data = None
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error, data
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error, data
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error, data
+        if not isinstance(folder, str):
+            str_error = 'folder must be a string'
+            return str_error, data
+        url_post = self.url + defs_server_api.URL_FILE_MANAGER_SCAN_SUFFIX
+        payload_as_dict = {}
+        payload_as_dict[defs_server_api.PROJECT_TAG_ID_WITH_PROJECT] = str(self.current_project_id)
+        payload_as_dict[defs_server_api.PATH_TAG] = folder
+        payload = json.dumps(payload_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error, data
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error, data
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error, data
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error, data
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error, data
+            str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error, data
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error, data
+        data = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        return str_error, data
+
     def get_project_by_name(self, project_name):
         str_error = ''
         project = None
@@ -703,11 +813,55 @@ class PostGISServerAPI():
             self.user_by_email[usermail] = user
         return str_error
 
-    def process_publish_layer_set(self,
-                                  process,
-                                  dialog = None):
-        yo = 1
-        return
+    def process_publish_layers_set(self,
+                                   process,
+                                   dialog = None):
+        str_error = ''
+        end_date_time = None
+        log = None
+        if self.current_project_id is None:
+            str_error = 'current project id is none. Set before'
+            return str_error, end_date_time, log
+        name = process[processes_defs_processes.PROCESS_FIELD_NAME]
+        parametes_manager = process[processes_defs_processes.PROCESS_FIELD_PARAMETERS]
+        if not defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_UPLOAD_FOLDER in parametes_manager.parameters:
+            str_error = ('Process: {} does not have parameter: {}'.
+                         format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_UPLOAD_FOLDER))
+            return str_error, end_date_time, log
+        if not defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET in parametes_manager.parameters:
+            str_error = ('Process: {} does not have parameter: {}'.
+                         format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET))
+            return str_error, end_date_time, log
+        parameter_upload_folder= parametes_manager.parameters[defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_UPLOAD_FOLDER]
+        # output_file_path = str(parameter_output_file)
+        root_path = defs_server_api.ROOT_PATH
+        str_error, data = self.get_folder_structure(self.current_project_id, root_path)
+        if str_error:
+            str_error = ('Process: {}, for project: {}, error getting folders structure:\n{}'.
+                         format(name, str(project_id), str_error))
+            return str_error, end_date_time, log
+        upload_folder = str(parameter_upload_folder)
+        folders = []
+        if '/' in upload_folder:
+            folders = upload_folder.split('/')
+        else:
+            folders.append(upload_folder)
+        data_base = data
+        for i in range(len(folders)):
+            folder = folders[i]
+            if not folder in data_base:
+                str_error = self.create_folder(self.current_project_id, defs_server_api.ROOT_PATH,
+                                               upload_folder)
+                if str_error:
+                    str_error = ('Process: {}, for project: {}, error getting folders structure:\n{}'.
+                                 format(name, str(project_id), str_error))
+                    return str_error, end_date_time, log
+                break
+            data_base = data_base[folder]
+
+
+        end_date_time = datetime.datetime.now()
+        return str_error, end_date_time, log
 
     def register(self, url, name, email, password):
         str_error = ''
@@ -815,3 +969,6 @@ class PostGISServerAPI():
             str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
             return str_error
         return str_error
+
+    def set_current_project_id(self, project_id):
+        self.current_project_id = project_id
