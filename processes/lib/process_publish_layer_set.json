@@ -16,6 +16,16 @@
     "doc": "",
     "parameters": [
         {
+            "label": "Name",
+            "argparser": "",
+            "description": "Name for publish process",
+            "mandatory": true,
+            "output": true,
+            "value": "First publish",
+            "type": "string",
+            "output_format": "{:s}"
+        },
+        {
             "label": "Layers Set",
             "argparser": "",
             "description": "Layers Set, selected layers from a GPKG",

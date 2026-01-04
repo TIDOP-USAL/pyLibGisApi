@@ -14,6 +14,7 @@ sys.path.append(os.path.join(current_path, '..'))
 from pyLibProcesses.defs import defs_processes as processes_defs_processes
 from pyLibGisApi.defs import defs_server_api
 from pyLibGisApi.defs import defs_processes
+from pyLibParameters import defs_pars
 
 def email_validator(email):
     pattern = (r"^(?!\.)(?!.*\.\.)[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+"
@@ -884,6 +885,12 @@ class PostGISServerAPI():
             str_error = ('Process: {} does not have parameter: {}'.
                          format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET))
             return str_error, end_date_time, log
+        if not defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_NAME in parametes_manager.parameters:
+            str_error = ('Process: {} does not have parameter: {}'.
+                         format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_NAME))
+            return str_error, end_date_time, log
+        parameter_name= parametes_manager.parameters[defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_NAME]
+        publish_name = str(parameter_name)
         # make upload folder
         parameter_upload_folder= parametes_manager.parameters[defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_UPLOAD_FOLDER]
         root_path = defs_server_api.ROOT_PATH
@@ -952,28 +959,45 @@ class PostGISServerAPI():
                          format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
                                 defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_LAYER_PARAMETER_LAYERS))
             return str_error, end_date_time, log
+        publish_content_as_dict = {}
+        publish_content_as_dict['name'] = publish_name
+        publish_content_as_dict['project_id'] = self.current_project_id
+        publish_content_as_dict['path'] = file_path_in_target_folder
+        publish_layers_content = []
         for i in range(len(layers)):
+            layer = layers[i]
             if not isinstance(layer, list):
                 str_error = ('Process: {}, in parameter: {} parameter: {} in position: {} must be a list'.
                              format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
                                     str(i+1), defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_LAYER_PARAMETER_LAYERS))
                 return str_error, end_date_time, log
-            layer = layers[i]
-            name = None
-            title = None
-            position = None
-            crs = None
-            date = None
-            minimum_zoom = None
-            maximum_zoom = None
-            layer_type = None
-            layer_style = None
-            group_name = None
+            field_value_by_source_tag = {}
             for j in range(len(layer)):
-                yo = 1
-
-            yo = 1
-
+                layer_field = layer[j]
+                if not defs_pars.PARAMETER_FIELD_LABEL in layer_field:
+                    str_error = ('Process: {}, in parameter: {} in layer position: {}\nnot exists field: {}'.
+                                 format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
+                                        str(i+1), defs_pars.PARAMETER_FIELD_LABEL))
+                    return str_error, end_date_time, log
+                field_name = layer[j][defs_pars.PARAMETER_FIELD_LABEL]
+                if not defs_pars.PARAMETER_FIELD_VALUE in layer_field:
+                    str_error = ('Process: {}, in parameter: {} in layer position: {}\nnot exists field: {}'.
+                                 format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
+                                        str(i+1), defs_pars.PARAMETER_FIELD_VALUE))
+                    return str_error, end_date_time, log
+                field_value = layer[j][defs_pars.PARAMETER_FIELD_VALUE]
+                field_value_by_source_tag[field_name] = field_value
+            publish_layer_content = {}
+            for source_tag in defs_processes.process_publish_layer_target_tag_by_source_tag:
+                target_tag = defs_processes.process_publish_layer_target_tag_by_source_tag[source_tag]
+                if not source_tag in field_value_by_source_tag:
+                    str_error = ('Process: {}, in parameter: {} in layer position: {}\nnot exists field: {}'.
+                                 format(name, defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
+                                        str(i+1), source_tag))
+                    return str_error, end_date_time, log
+                publish_layer_content[target_tag] = field_value_by_source_tag[source_tag]
+            publish_layers_content.append(publish_layer_content)
+        publish_content_as_dict['layers'] = publish_layers_content
 
 
         # error upload
