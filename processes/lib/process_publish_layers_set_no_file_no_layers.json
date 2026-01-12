@@ -33,8 +33,7 @@
             "output": false,
             "value": {
                 "file_path": "",
-                "layers": [
-                ]
+                "layers": []
             },
             "type": "layers_set",
             "file_mode": "read",
@@ -155,7 +154,7 @@
                     "type": "string",
                     "output_format": "{:s}"
                 },
-				{
+                {
                     "label": "Description",
                     "argparser": "",
                     "description": "Layer description",
@@ -165,7 +164,7 @@
                     "type": "string",
                     "output_format": "{:s}"
                 },
-				{
+                {
                     "label": "Layer type",
                     "argparser": "",
                     "description": "Layer type: vector, raster, ...",
@@ -175,7 +174,7 @@
                     "type": "string",
                     "output_format": "{:s}"
                 },
-				{
+                {
                     "label": "Layer style",
                     "argparser": "",
                     "description": "Layer style, or empty",

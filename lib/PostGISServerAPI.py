@@ -1042,7 +1042,7 @@ class PostGISServerAPI():
                                                 defs_processes.PROCESS_FUNCTION_PUBLISH_LAYERS_SET_PARAMETER_LAYERS_SET,
                                                 str(i + 1), field_value, str_error))
                             return str_error, end_date_time, log
-                        field_value = layer_group_id
+                        # field_value = layer_group_id #before was id, now is groupname
                 field_value_by_source_tag[field_name] = field_value
             publish_layer_content = {}
             for source_tag in defs_processes.process_publish_layer_target_tag_by_source_tag:
@@ -1113,7 +1113,7 @@ class PostGISServerAPI():
         if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
             str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
             return str_error
-        end_date_time = datetime.datetime.now()
+        end_date_time = datetime.now()
         return str_error, end_date_time, log
 
     def register(self, url, name, email, password):
