@@ -41,6 +41,151 @@
                             "description": "Layer name from GPKG",
                             "mandatory": true,
                             "output": false,
+                            "value": "puntos_belinchon",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        },
+                        {
+                            "label": "Title",
+                            "argparser": "",
+                            "description": "Layer title",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "Puntos",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        },
+                        {
+                            "label": "Position",
+                            "argparser": "",
+                            "description": "Position in layers set, 0 to ignore",
+                            "mandatory": true,
+                            "output": false,
+                            "value": 3,
+                            "type": "integer",
+                            "domain": [
+                                0,
+                                100
+                            ],
+                            "output_format": "{:10d}"
+                        },
+                        {
+                            "label": "CRS",
+                            "argparser": "",
+                            "description": "A valid CRS identifier, not compound, (EPSG:25830, ...) for replace the internal CRS of layers. Empty for no use",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "EPSG:25830",
+                            "type": "string",
+                            "output_format": "{:>s}"
+                        },
+                        {
+                            "label": "Date",
+                            "argparser": "date",
+                            "description": "A valid date in selected format or empty",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "20260114",
+                            "type": "date",
+                            "date_format": "%Y%m%d",
+                            "output_format": "{:>10s}"
+                        },
+                        {
+                            "label": "Minimum zoom",
+                            "argparser": "",
+                            "description": "Minimum zoom",
+                            "mandatory": true,
+                            "output": false,
+                            "value": 10,
+                            "type": "integer",
+                            "domain": [
+                                1,
+                                25
+                            ],
+                            "output_format": "{:10d}"
+                        },
+                        {
+                            "label": "Maximum zoom",
+                            "argparser": "",
+                            "description": "Minimum zoom",
+                            "mandatory": true,
+                            "output": false,
+                            "value": 25,
+                            "type": "integer",
+                            "domain": [
+                                1,
+                                25
+                            ],
+                            "output_format": "{:10d}"
+                        },
+                        {
+                            "label": "Use layer style",
+                            "argparser": "",
+                            "description": "Use layer style, if exists",
+                            "mandatory": true,
+                            "output": false,
+                            "value": true,
+                            "type": "boolean",
+                            "output_format": "{:>10s}"
+                        },
+                        {
+                            "label": "Visible",
+                            "argparser": "",
+                            "description": "Set visible",
+                            "mandatory": true,
+                            "output": false,
+                            "value": true,
+                            "type": "boolean",
+                            "output_format": "{:>10s}"
+                        },
+                        {
+                            "label": "Layers group name",
+                            "argparser": "",
+                            "description": "Layers group name, empty for use GPKG base name",
+                            "mandatory": true,
+                            "output": true,
+                            "value": "Belinchón",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        },
+                        {
+                            "label": "Description",
+                            "argparser": "",
+                            "description": "Layer description",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "Estos son puntitos",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        },
+                        {
+                            "label": "Layer type",
+                            "argparser": "",
+                            "description": "Layer type: vector, raster, ...",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "vector",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        },
+                        {
+                            "label": "Layer style",
+                            "argparser": "",
+                            "description": "Layer style, or empty",
+                            "mandatory": true,
+                            "output": false,
+                            "value": "puntos_belinchon",
+                            "type": "string",
+                            "output_format": "{:s}"
+                        }
+                    ],
+                    [
+                        {
+                            "label": "Layer name",
+                            "argparser": "",
+                            "description": "Layer name from GPKG",
+                            "mandatory": true,
+                            "output": false,
                             "value": "poligonos_belinchon",
                             "type": "string",
                             "output_format": "{:s}"
