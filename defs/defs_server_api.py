@@ -33,6 +33,8 @@ URL_FILE_MANAGER_UPLOADS = '/api/filemanager/uploads'
 URL_FILE_MANAGER_DELETE = '/api/filemanager/delete'
 URL_FILE_MANAGER_MOVE = '/api/filemanager/move'
 URL_PRODUCT_PUBLISH = '/api/products'
+URL_GEOPACKAGE_EXPORT = '/api/geopackage/export'
+URL_FILE_MANAGER_DOWNLOAD = "/api/filemanager/download"
 
 LOGIN_TAG_EMAIL = 'email'
 LOGIN_TAG_PASSWORD = 'password'
@@ -106,5 +108,18 @@ FILE_MANAGER_TAG_ACTION = 'action'
 FILE_MANAGER_TAG_ACTION_CREATE = 'create'
 FILE_MANAGER_TAG_SOURCE_PATH = 'source_path'
 FILE_MANAGER_TAG_TARGET_PATH = 'target_path'
+
+GEOPACKAGE_TAG = 'gpkg_path'
+TABLE_NAMES_TAG = 'table_names'
+EXPORT_FOLDER = '/export'
+EXPORT_ITERATION_TIME_IN_SECONDS = 2
+EXPORT_MAX_TIME_IN_SECONDS = 300
+SERVER_LAYER_RASTER_TYPE = 'raster'
+SERVER_LAYER_VECTOR_TYPE = 'vector'
+SERVER_LAYER_SOURCE_TAG = 'source'
+server_source_types_by_layer_type = {}
+server_source_types_by_layer_type[SERVER_LAYER_RASTER_TYPE] = ['GeoTIFF']
+server_source_types_by_layer_type[SERVER_LAYER_VECTOR_TYPE] = ['PostGIS']
+
 
 

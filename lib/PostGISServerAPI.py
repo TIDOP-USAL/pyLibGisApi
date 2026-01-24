@@ -7,6 +7,7 @@ import json
 from urllib.parse import urlparse
 import re
 from datetime import datetime
+import time
 
 current_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(current_path, '..'))
@@ -327,6 +328,52 @@ class PostGISServerAPI():
             return str_error
         return str_error
 
+    def download_file(self, project_id, target_server_file_path, target_file_path):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error
+        if not isinstance(target_server_file_path, str):
+            str_error = 'path must be a string'
+            return str_error
+        if not isinstance(target_file_path, str):
+            str_error = 'path must be a string'
+            return str_error
+        url_post = self.url + defs_server_api.URL_FILE_MANAGER_DOWNLOAD
+        payload_as_dict = {}
+        payload_as_dict[defs_server_api.PROJECT_TAG_ID_WITH_PROJECT] = str(project_id)
+        payload_as_dict[defs_server_api.PATH_TAG] = target_server_file_path
+        payload = json.dumps(payload_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        # response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            # if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+            #     str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+            #     return str_error
+            str_error = 'downloadig post request failed'
+            return str_error
+        try:
+            open(target_file_path, 'wb').write(response.content)
+        except Exception as e:
+            str_error = ("Error downloading file:\n{}".format(e))
+        return str_error
+
     def execute_sqls(self, project_id, sqls):
         str_error = ''
         data = None
@@ -391,6 +438,83 @@ class PostGISServerAPI():
                 if len(data) == 0:
                     data = None
         return str_error, data
+
+    def export_layers_to_geopackage(self, project_id, table_names, target_file_path):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(project_id, int):
+            str_error = 'project_id must be an integer'
+            return str_error
+        if not isinstance(target_file_path, str):
+            str_error = 'path must be a string'
+            return str_error
+        if not table_names:
+            str_error = 'table names must be a not empty list'
+            return str_error
+        if not isinstance(table_names, list):
+            str_error = 'table names must be a list'
+            return str_error
+        target_file_basename = os.path.basename(target_file_path)
+        target_server_file_path = defs_server_api.EXPORT_FOLDER + '/' + target_file_basename
+        url_post = self.url + defs_server_api.URL_GEOPACKAGE_EXPORT
+        payload_as_dict = {}
+        payload_as_dict[defs_server_api.PROJECT_TAG_ID_WITH_PROJECT] = str(project_id)
+        payload_as_dict[defs_server_api.GEOPACKAGE_TAG] = target_server_file_path
+        payload_as_dict[defs_server_api.TABLE_NAMES_TAG] = table_names
+        payload = json.dumps(payload_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        # if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+        #     str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+        #     return str_error
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        exists_exported_file = False
+        wait_time = 0
+        while not exists_exported_file:
+            time.sleep(defs_server_api.EXPORT_ITERATION_TIME_IN_SECONDS)
+            wait_time = wait_time + defs_server_api.EXPORT_ITERATION_TIME_IN_SECONDS
+            str_error, data = self.get_folder_structure(project_id, defs_server_api.EXPORT_FOLDER)
+            if str_error:
+                return str_error
+            if not data:
+                continue
+            if target_file_basename in data:
+                exists_exported_file = True
+            elif wait_time > defs_server_api.EXPORT_MAX_TIME_IN_SECONDS:
+                break
+        if exists_exported_file:
+            str_error = self.download_file(project_id, target_server_file_path, target_file_path)
+            if not str_error:
+                str_error = self.remove_folder_or_file(project_id, target_server_file_path)
+        else:
+            str_error = ("The export has not finished in {} seconds".format(defs_server_api.EXPORT_MAX_TIME_IN_SECONDS))
+        return str_error
 
     def login(self, url, email, password):
         str_error = ''
@@ -907,7 +1031,7 @@ class PostGISServerAPI():
         str_error, data = self.get_folder_structure(self.current_project_id, root_path)
         if str_error:
             str_error = ('Process: {}, for project: {}, error getting folders structure:\n{}'.
-                         format(name, str(project_id), str_error))
+                         format(name, self.current_project_id, str_error))
             return str_error, end_date_time, log
         upload_folder = str(parameter_upload_folder)
         folders = []
@@ -927,7 +1051,7 @@ class PostGISServerAPI():
                                                upload_folder)
                 if str_error:
                     str_error = ('Process: {}, for project: {}, error getting folders structure:\n{}'.
-                                 format(name, str(project_id), str_error))
+                                 format(name, str(self.current_project_id), str_error))
                     return str_error, end_date_time, log
                 break
             data_base = data_base[folder]
@@ -1012,7 +1136,7 @@ class PostGISServerAPI():
                         str_error = self.get_layers_groups(self.current_project_id)
                         if str_error:
                             str_error = ('Process: {}, for project: {}, getting layers groups, error:\n{}'.
-                                        format(name, str(project_id), str_error))
+                                        format(name, str(self.current_project_id), str_error))
                             return str_error, end_date_time, log
                         if not field_value in self.layers_group_id_by_name:
                             layers_group_as_dict = {}
@@ -1035,7 +1159,7 @@ class PostGISServerAPI():
                             str_error = self.get_layers_groups(self.current_project_id)
                             if str_error:
                                 str_error = ('Process: {}, for project: {}, getting layers groups, error:\n{}'.
-                                            format(name, str(project_id), str_error))
+                                            format(name, str(self.current_project_id), str_error))
                                 return str_error, end_date_time, log
                         str_error, layer_group_id = self.get_layers_group_id_by_name(self.current_project_id, field_value)
                         if str_error:
@@ -1066,12 +1190,12 @@ class PostGISServerAPI():
             str_error = self.remove_folder_or_file(self.current_project_id, file_path_to_remove)
             if str_error:
                 str_error = ('Process: {}, for project: {}, removing:\n{}\nerror:\n{}'.
-                             format(name, str(project_id), file_path_to_remove, str_error))
+                             format(name, str(self.current_project_id), file_path_to_remove, str_error))
                 return str_error, end_date_time, log
         str_error = self.upload_file(self.current_project_id, file_path)
         if str_error:
             str_error = ('Process: {}, for project: {}, uploading:\n{}\nerror:\n{}'.
-                         format(name, str(project_id), file_path, str_error))
+                         format(name, str(self.current_project_id), file_path, str_error))
             return str_error, end_date_time, log
         # error upload
 
@@ -1081,14 +1205,14 @@ class PostGISServerAPI():
             str_error = self.remove_folder_or_file(self.current_project_id, file_path_to_remove)
             if str_error:
                 str_error = ('Process: {}, for project: {}, removing:\n{}\nerror:\n{}'.
-                             format(name, str(project_id), file_path_to_remove, str_error))
+                             format(name, str(self.current_project_id), file_path_to_remove, str_error))
                 return str_error, end_date_time, log
         # move file to target folder
         str_error = self.move_folder_or_file(self.current_project_id, file_path_in_uploads_folder,
                                              target_folder)
         if str_error:
             str_error = ('Process: {}, for project: {}, moving from:\n{}\nto:\n{}\nerror:\n{}'.
-                         format(name, str(project_id), file_path_in_uploads_folder,
+                         format(name, str(self.current_project_id), file_path_in_uploads_folder,
                                 file_path_in_target_folder, str_error))
             return str_error, end_date_time, log
 
