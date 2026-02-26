@@ -37,6 +37,8 @@ class PostGISServerAPI():
         self.layer_id_by_table_name = None # dict
         self.current_project_id = None
         self.layers = [] # list
+        self.data_model_by_id = {}
+        self.data_model_id_by_name = {}
 
     def add_user_to_project(self, project_id, user_id, role):
         str_error = ''
@@ -69,6 +71,59 @@ class PostGISServerAPI():
                 return str_error
             str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
             return str_error
+        return str_error
+
+    def create_data_model(self, data_model_as_dict):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(data_model_as_dict, dict):
+            str_error = 'name must be a dictionary'
+            return str_error
+        url_post = self.url + defs_server_api.URL_DATA_MODELS_SUFFIX
+        payload = json.dumps(data_model_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        # data = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        # if not defs_server_api.PROJECT_TAG_ID in data:
+        #     str_error = 'Not exists {} tag in response {}'.format(defs_server_api.PROJECT_TAG_ID,
+        #                                                           defs_server_api.RESPONSE_TEXT_TAG_DATA)
+        #     return str_error
+        # project_id = data[defs_server_api.PROJECT_TAG_ID]
+        str_error = self.get_data_models()
+        if str_error:
+            str_error = ('Error creating data model: {}, error:\n{}'
+                         .format(data_model_as_dict[defs_server_api.DATA_MODEL_TAG_NAME], str_error))
+            return str_error
+        # if bool(self.project_by_id):
+        #     self.project_by_id.clear()
+        #     self.project_by_id = {}
+        # for project in data:
+        #     id = project[defs_server_api.PROJECTS_TAG_ID]
+        #     self.project_by_id[id] = project
         return str_error
 
     def create_folder(self, project_id, path, folder):
@@ -283,6 +338,47 @@ class PostGISServerAPI():
         # for project in data:
         #     id = project[defs_server_api.PROJECTS_TAG_ID]
         #     self.project_by_id[id] = project
+        return str_error
+
+    def delete_data_model(self, data_model_name):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(data_model_name, str):
+            str_error = 'data model name must be a string'
+            return str_error
+        str_error, data_model = self.get_data_model(data_model_name)
+        if str_error:
+            str_error = 'Getting data model: {}, error:\n{}'.format(data_model_name, str_error)
+            return str_error
+        data_model_id = data_model[defs_server_api.DATA_MODEL_TAG_ID]
+        url_get = self.url + defs_server_api.URL_DATA_MODELS_SUFFIX + '/' + str(data_model_id)
+        payload = {}
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        headers = headers_as_dict
+        response = requests.request("DELETE", url_get, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        str_error = self.get_data_models()
+        if str_error:
+            str_error = ('Deleting data model: {}, error:\n{}'.format(data_model_name, str_error))
+            return str_error
         return str_error
 
     def delete_project_by_name(self, name):
@@ -624,6 +720,103 @@ class PostGISServerAPI():
         self.user = self.user_by_email[email]
         self.password = password
         return str_error
+
+    def get_data_model(self, data_model_name):
+        str_error = ''
+        data_model = None
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error, data_model
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error, data_model
+        str_error, exists_data_model = self.get_exists_data_model(data_model_name)
+        if str_error:
+            str_error = 'Getting exists data model:{}\nError:\n{}'.format(data_model_name, str_error)
+            return str_error, data_model
+        if not exists_data_model:
+            str_error = 'Not exists data model:{}'.format(data_model_name)
+            return str_error, data_model
+        data_model_id = self.data_model_id_by_name[data_model_name]
+        url_get = self.url + defs_server_api.URL_DATA_MODELS_SUFFIX + '/' + str(data_model_id)
+        payload = {}
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        headers = headers_as_dict
+        response = requests.request("GET", url_get, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        data_model = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        return str_error, data_model
+
+    def get_data_models(self):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        url_get = self.url + defs_server_api.URL_DATA_MODELS_SUFFIX
+        payload = {}
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        headers = headers_as_dict
+        response = requests.request("GET", url_get, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        data = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        if bool(self.data_model_by_id):
+            self.data_model_by_id.clear()
+            self.data_model_id_by_name.clear()
+            self.data_model_by_id = {}
+            self.data_model_id_by_name = {}
+        for i in range(len(data)):
+            data_model = data[i]
+            id = data_model[defs_server_api.DATA_MODEL_TAG_ID]
+            name = data_model[defs_server_api.DATA_MODEL_TAG_NAME]
+            self.data_model_by_id[id] = data_model
+            self.data_model_id_by_name[name] = id
+        return str_error
+
+    def get_exists_data_model(self, data_model_name):
+        str_error = ''
+        exists_data_model = False
+        str_error = self.get_data_models()
+        if str_error:
+            str_error = 'Error getting data models:\n{}'.format(str_error)
+            return str_error, exists_data_model
+        if data_model_name in self.data_model_id_by_name:
+            exists_data_model = True
+        return str_error, exists_data_model
 
     def get_exists_project_by_name(self, project_name):
         str_error = ''
@@ -1035,18 +1228,100 @@ class PostGISServerAPI():
             return str_error
         return str_error
 
+    def process_export_project_to_geopackage(self,
+                                             process,
+                                             dialog = None):
+        str_error = ''
+        end_date_time = None
+        log = None
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error, end_date_time, log
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error, end_date_time, log
+        project_id = self.current_project_id
+        name = process[processes_defs_processes.PROCESS_FIELD_NAME]
+        parametes_manager = process[processes_defs_processes.PROCESS_FIELD_PARAMETERS]
+        if not (defs_processes.PROCESS_FUNCTION_EXPORT_PROJECT_TO_GEOPACKAGE_PARAMETER_GEOPACKAGE
+                in parametes_manager.parameters):
+            str_error = ('Process: {} does not have parameter: {}'.
+                         format(name,
+                                defs_processes.PROCESS_FUNCTION_EXPORT_PROJECT_TO_GEOPACKAGE_PARAMETER_GEOPACKAGE))
+            return str_error, end_date_time, log
+        target_file_path = parametes_manager.parameters[
+            defs_processes.PROCESS_FUNCTION_EXPORT_PROJECT_TO_GEOPACKAGE_PARAMETER_GEOPACKAGE]
+        target_file_path = str(target_file_path)
+        target_file_basename = os.path.basename(target_file_path)
+        target_server_file_path = defs_server_api.EXPORT_FOLDER + '/' + target_file_basename
+        url_post = self.url + defs_server_api.URL_GEOPACKAGE_EXPORT
+        payload_as_dict = {}
+        payload_as_dict[defs_server_api.PROJECT_TAG_ID_WITH_PROJECT] = str(project_id)
+        payload_as_dict[defs_server_api.GEOPACKAGE_TAG] = target_server_file_path
+        payload_as_dict[defs_server_api.TABLE_NAMES_TAG] = []
+        payload = json.dumps(payload_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        # headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error, end_date_time, log
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error, end_date_time, log
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error, end_date_time, log
+        # if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+        #     str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+        #     return str_error
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error, end_date_time, log
+            str_error = 'get request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error, end_date_time, log
+        exists_exported_file = False
+        wait_time = 0
+        while not exists_exported_file:
+            time.sleep(defs_server_api.EXPORT_ITERATION_TIME_IN_SECONDS)
+            wait_time = wait_time + defs_server_api.EXPORT_ITERATION_TIME_IN_SECONDS
+            str_error, data = self.get_folder_structure(project_id, defs_server_api.EXPORT_FOLDER)
+            if str_error:
+                return str_error, end_date_time, log
+            if not data:
+                continue
+            if target_file_basename in data:
+                exists_exported_file = True
+            elif wait_time > defs_server_api.EXPORT_MAX_TIME_IN_SECONDS:
+                break
+        if exists_exported_file:
+            str_error = self.download_file(project_id, target_server_file_path, target_file_path)
+            if not str_error:
+                str_error = self.remove_folder_or_file(project_id, target_server_file_path)
+        else:
+            str_error = ("The export has not finished in {} seconds".format(defs_server_api.EXPORT_MAX_TIME_IN_SECONDS))
+        end_date_time = datetime.now()
+        return str_error, end_date_time, log
+
     def process_publish_layers_set(self,
                                    process,
                                    dialog = None):
         str_error = ''
-        if self.url is None:
-            str_error = 'url is none. Connect before'
-            return str_error
-        if self.token is None:
-            str_error = 'token is none. Connect before'
-            return str_error
         end_date_time = None
         log = None
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error, end_date_time, log
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error, end_date_time, log
         if self.current_project_id is None:
             str_error = 'current project id is none. Set before'
             return str_error, end_date_time, log
@@ -1442,6 +1717,63 @@ class PostGISServerAPI():
 
     def set_current_project_id(self, project_id):
         self.current_project_id = project_id
+
+    def update_data_model(self, data_model_as_dict):
+        str_error = ''
+        if self.url is None:
+            str_error = 'url is none. Connect before'
+            return str_error
+        if self.token is None:
+            str_error = 'token is none. Connect before'
+            return str_error
+        if not isinstance(data_model_as_dict, dict):
+            str_error = 'name must be a dictionary'
+            return str_error
+        if not defs_server_api.DATA_MODEL_TAG_ID in data_model_as_dict:
+            str_error = 'not found {} in data model'.format(defs_server_api.DATA_MODEL_TAG_ID)
+            return str_error
+        data_model_id = data_model_as_dict[defs_server_api.DATA_MODEL_TAG_ID]
+        url_post = self.url + defs_server_api.URL_DATA_MODELS_SUFFIX + '/' + str(data_model_id)
+        payload = json.dumps(data_model_as_dict)
+        headers_as_dict = {}
+        headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
+        headers_as_dict[defs_server_api.HEADERS_TAG_AUTHORIZATION] = (defs_server_api.HEADERS_TAG_AUTHORIZATION_BEARER
+                                                                      + self.token)
+        headers_as_dict[defs_server_api.HEADERS_TAG_ACCEPT] = defs_server_api.HEADERS_ACCEPT_DEFAULT_VALUE
+        # headers = json.dumps(headers_as_dict)
+        headers = headers_as_dict
+        response = requests.request("POST", url_post, headers=headers, data=payload)#, data=payload)
+        if response.status_code == 400:
+            str_error = 'post request failed: not found'
+            return str_error
+        response_text_as_dict = json.loads(response.text)
+        if not response.ok:
+            if not defs_server_api.RESPONSE_TEXT_TAG_MESSAGE in response_text_as_dict:
+                str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_MESSAGE)
+                return str_error
+            str_error = 'post request failed: {}'.format(response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_MESSAGE])
+            return str_error
+        if not defs_server_api.RESPONSE_TEXT_TAG_DATA in response_text_as_dict:
+            str_error = 'Not exists {} tag in response'.format(defs_server_api.RESPONSE_TEXT_TAG_DATA)
+            return str_error
+        # data = response_text_as_dict[defs_server_api.RESPONSE_TEXT_TAG_DATA]
+        # if not defs_server_api.PROJECT_TAG_ID in data:
+        #     str_error = 'Not exists {} tag in response {}'.format(defs_server_api.PROJECT_TAG_ID,
+        #                                                           defs_server_api.RESPONSE_TEXT_TAG_DATA)
+        #     return str_error
+        # project_id = data[defs_server_api.PROJECT_TAG_ID]
+        str_error = self.get_data_models()
+        if str_error:
+            str_error = ('Error creating data model: {}, error:\n{}'
+                         .format(data_model_as_dict[defs_server_api.DATA_MODEL_TAG_NAME], str_error))
+            return str_error
+        # if bool(self.project_by_id):
+        #     self.project_by_id.clear()
+        #     self.project_by_id = {}
+        # for project in data:
+        #     id = project[defs_server_api.PROJECTS_TAG_ID]
+        #     self.project_by_id[id] = project
+        return str_error
 
     def upload_file(self, project_id, file_path):
         str_error = ''

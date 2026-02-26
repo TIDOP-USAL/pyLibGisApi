@@ -1,0 +1,33 @@
+{
+    "name": "Export Project to GeoPackage",
+    "contributions": {
+        "methodology": [
+            "David Hernández López, david.hernandez@uclm.es"
+        ],
+        "software": [
+            "David Hernández López, david.hernandez@uclm.es"
+        ]
+    },
+    "src": {
+        "class": "pyLibGisApi.lib.PostGISServerAPI",
+        "method": "process_export_project_to_geopackage"
+    },
+    "description": "A process to export a project to GeoPackage",
+    "doc": "",
+    "parameters": [
+        {
+            "label": "GeoPackage",
+            "argparser": "",
+            "description": "Output GeoPackage file path for export project",
+            "mandatory": true,
+            "output": true,
+            "value": "D:/InspectiaProjects/prj_dhl_1/output/dhl_1_prj.gpkg",
+            "type": "file",
+            "file_mode": "write",
+            "domain": [
+                ".gpkg"
+            ],
+            "output_format": "{:s}"
+        }
+    ]
+}

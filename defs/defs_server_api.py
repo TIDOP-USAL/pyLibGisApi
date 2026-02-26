@@ -35,6 +35,7 @@ URL_FILE_MANAGER_MOVE = '/api/filemanager/move'
 URL_PRODUCT_PUBLISH = '/api/products'
 URL_GEOPACKAGE_EXPORT = '/api/geopackage/export'
 URL_FILE_MANAGER_DOWNLOAD = "/api/filemanager/download"
+URL_DATA_MODELS_SUFFIX = '/api/datamodels'
 
 LOGIN_TAG_EMAIL = 'email'
 LOGIN_TAG_PASSWORD = 'password'
@@ -120,6 +121,15 @@ SERVER_LAYER_SOURCE_TAG = 'source'
 server_source_types_by_layer_type = {}
 server_source_types_by_layer_type[SERVER_LAYER_RASTER_TYPE] = ['GeoTIFF']
 server_source_types_by_layer_type[SERVER_LAYER_VECTOR_TYPE] = ['PostGIS']
+
+DATA_MODEL_TAG_ID = 'id'
+DATA_MODEL_TAG_NAME = 'name'
+DATA_MODEL_TAG_DESCRIPTION = 'description'
+DATA_MODEL_TAG_VERSION = 'version'
+DATA_MODEL_TAG_TITLE = 'INSPECTIA'
+DATA_MODEL_TAG_USER_ID = 'user_id'
+DATA_MODEL_TAG_LAYERS = 'layers'
+DATA_MODEL_TAG_SCRIPT = 'script'
 
 
 
