@@ -265,7 +265,7 @@ class PostGISServerAPI():
             return str_error
         return str_error
 
-    def create_project(self, name, description, start_date, end_date, type):
+    def create_project(self, name, description, start_date, end_date, type, data_model_id = None):
         str_error = ''
         if self.url is None:
             str_error = 'url is none. Connect before'
@@ -293,6 +293,10 @@ class PostGISServerAPI():
         if type.casefold() != defs_server_api.PROJECT_TYPE_DEFAULT.casefold():
             str_error = ('type must be: {}'.format(defs_server_api.PROJECT_TYPE_DEFAULT))
             return str_error
+        if not data_model_id is None:
+            if not isinstance(data_model_id, int):
+                str_error = 'data model id must be a int'
+                return str_error
         url_post = self.url + defs_server_api.URL_PROJECTS_SUFFIX
         payload_as_dict = {}
         payload_as_dict[defs_server_api.PROJECT_TAG_NAME] = name
@@ -300,6 +304,8 @@ class PostGISServerAPI():
         payload_as_dict[defs_server_api.PROJECT_TAG_START_DATE] = start_date
         payload_as_dict[defs_server_api.PROJECT_TAG_END_DATE] = end_date
         payload_as_dict[defs_server_api.PROJECT_TAG_TYPE] = type
+        if not data_model_id is None:
+            payload_as_dict[defs_server_api.PROJECT_TAG_DATA_MODEL_ID] = data_model_id
         payload = json.dumps(payload_as_dict)
         headers_as_dict = {}
         headers_as_dict[defs_server_api.HEADERS_TAG_CONTENT] = defs_server_api.HEADERS_CONTENT_DEFAULT_VALUE
